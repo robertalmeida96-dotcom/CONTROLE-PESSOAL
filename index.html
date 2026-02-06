@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistema profissional de gestão de trading">
+    <title>📊 Trading Pro - Gestão Profissional</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+    <style>
+        :root {
+            --primary-cyan: #00E0FF;
+            --primary-gold: #D4AF37;
+            --primary-green: #00FF88;
+            --primary-red: #FF0055;
+            --primary-purple: #9D00FF;
+            --primary-orange: #FF9500;
+            
+            --bg-dark: #0A0A0F;
+            --bg-card: #12121A;
+            --bg-input: #1A1A24;
+            
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0B8;
+            
+            --shadow-glow: 0 0 20px rgba(0, 224, 255, 0.3);
+            --shadow-card: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: linear-gradient(135deg, #0A0A0F 0%, #1A0F2E 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Partículas de fundo */
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.15;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--primary-cyan);
+            border-radius: 50%;
+            animation: float 10s infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) translateX(50px); opacity: 0; }
+        }
+        
+        /* App Container */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-card);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            transition: transform 0.3s;
+            z-index: 1000;
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+        
+        .sidebar-header {
+            padding: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, var(--primary-cyan) 0%, var(--primary-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+        
+        .user-info {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        
+        .nav-menu {
+            flex: 1;
+            padding: 1rem 0;
+            overflow-y: auto;
+        }
+        
+        .nav-item {
+            padding: 1rem 2rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+        
+        .nav-item.active {
+            background: rgba(0, 224, 255, 0.1);
+            border-left-color: var(--primary-cyan);
+            color: var(--text-primary);
+        }
+        
+        .nav-item-icon {
+            font-size: 1.2rem;
+        }
+        
+        .sidebar-footer {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            transition: margin-left 0.3s;
+        }
+        
+        .main-content.expanded {
+            margin-left: 0;
+        }
+        
+        .top-bar {
+            background: var(--bg-card);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .menu-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .page-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .current-date {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .content-area {
+            padding: 2rem;
+        }
+        
+        .screen {
+            display: none;
+        }
+        
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .summary-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--card-accent), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .summary-card:hover::before {
+            opacity: 1;
+        }
+        
+        .summary-card.current {
+            --card-accent: var(--primary-cyan);
+        }
+        
+        .summary-card.meta {
+            --card-accent: var(--primary-gold);
+        }
+        
+        .summary-card.stop {
+            --card-accent: var(--primary-red);
+        }
+        
+        .summary-card.profit {
+            --card-accent: var(--primary-green);
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-card);
+        }
+        
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .summary-card h3 {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .stat-value.positive {
+            color: var(--primary-green);
+        }
+        
+        .stat-value.negative {
+            color: var(--primary-red);
+        }
+        
+        /* Chart Card */
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .chart-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+        
+        .chart-filters {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+        }
+        
+        .filter-btn.active,
+        .filter-btn:hover {
+            background: var(--primary-cyan);
+            color: var(--bg-dark);
+            border-color: var(--primary-cyan);
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Exo 2', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--primary-purple) 100%);
+            color: var(--bg-dark);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+        
+        .btn-success {
+            background: var(--primary-green);
+            color: var(--bg-dark);
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary-cyan);
+            color: var(--primary-cyan);
+        }
+        
+        .btn-outline:hover {
+            background: var(--primary-cyan);
+            color: var(--bg-dark);
+        }
+        
+        .btn-large {
+            padding: 1rem 2rem;
+            font-size: 1.05rem;
+            width: 100%;
+        }
+        
+        .btn-icon {
+            background: var(--bg-input);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            font-size: 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-icon:hover {
+            background: var(--primary-cyan);
+            color: var(--bg-dark);
+            transform: translateY(-2px);
+        }
+        
+        /* Days List */
+        .days-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .day-card {
+            background: var(--bg-input);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .day-card:hover {
+            border-color: rgba(0, 224, 255, 0.3);
+        }
+        
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            user-select: none;
+        }
+        
+        .day-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .day-date-info {
+            flex: 1;
+        }
+        
+        .day-date {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            color: var(--primary-cyan);
+            margin-bottom: 0.5rem;
+        }
+        
+        .day-quick-stats {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .quick-stat {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            padding: 0.25rem 0.75rem;
+            background: var(--bg-card);
+            border-radius: 6px;
+        }
+        
+        .quick-stat.positive {
+            color: var(--primary-green);
+            background: rgba(0, 255, 136, 0.1);
+        }
+        
+        .quick-stat.negative {
+            color: var(--primary-red);
+            background: rgba(255, 0, 85, 0.1);
+        }
+        
+        .day-toggle-icon {
+            font-size: 1.2rem;
+            color: var(--primary-cyan);
+            transition: transform 0.3s;
+            margin-left: 1rem;
+        }
+        
+        .day-details {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 1000px;
+                padding-top: 1.5rem;
+                padding-bottom: 1.5rem;
+            }
+        }
+        
+        .day-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+        }
+        
+        .action-btn:hover {
+            background: var(--primary-cyan);
+            color: var(--bg-dark);
+            border-color: var(--primary-cyan);
+        }
+        
+        .day-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: 10px;
+        }
+        
+        .day-stat {
+            text-align: center;
+        }
+        
+        .day-stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .day-stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        
+        .entries-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        
+        .entry-slot {
+            background: var(--bg-card);
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .entry-slot:hover {
+            border-color: var(--primary-cyan);
+            transform: scale(1.02);
+        }
+        
+        .entry-slot.has-entry {
+            border-style: solid;
+        }
+        
+        .entry-slot.win {
+            border-color: var(--primary-green);
+            background: rgba(0, 255, 136, 0.05);
+        }
+        
+        .entry-slot.loss {
+            border-color: var(--primary-red);
+            background: rgba(255, 0, 85, 0.05);
+        }
+        
+        .entry-period {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .entry-result {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .entry-value {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        .empty-state-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state-text {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.875rem;
+            background: var(--bg-input);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-cyan);
+            box-shadow: 0 0 0 3px rgba(0, 224, 255, 0.1);
+        }
+        
+        .form-hint {
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .percent-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .percent-btn {
+            padding: 0.5rem;
+            background: var(--bg-input);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+        }
+        
+        .percent-btn:hover {
+            background: var(--primary-cyan);
+            color: var(--bg-dark);
+            border-color: var(--primary-cyan);
+        }
+        
+        .period-buttons,
+        .result-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        
+        .result-buttons {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .period-btn,
+        .result-btn {
+            padding: 1.5rem 1rem;
+            background: var(--bg-input);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .period-btn:hover,
+        .result-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .period-btn.selected {
+            border-color: var(--primary-cyan);
+            background: rgba(0, 224, 255, 0.1);
+        }
+        
+        .result-btn.selected.result-win {
+            border-color: var(--primary-green);
+            background: rgba(0, 255, 136, 0.1);
+        }
+        
+        .result-btn.selected.result-loss {
+            border-color: var(--primary-red);
+            background: rgba(255, 0, 85, 0.1);
+        }
+        
+        .btn-emoji {
+            font-size: 2rem;
+        }
+        
+        .btn-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: modalSlideUp 0.3s;
+        }
+        
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+        
+        .modal-header {
+            margin-bottom: 2rem;
+        }
+        
+        .modal-header h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .modal-header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-tab {
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Exo 2', sans-serif;
+            font-weight: 600;
+        }
+        
+        .filter-tab.active,
+        .filter-tab:hover {
+            background: var(--primary-cyan);
+            color: var(--bg-dark);
+            border-color: var(--primary-cyan);
+        }
+        
+        /* History List */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .history-item {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .history-item:hover {
+            transform: translateX(5px);
+        }
+        
+        .history-item-icon {
+            font-size: 2rem;
+            margin-right: 1rem;
+        }
+        
+        .history-item-info {
+            flex: 1;
+        }
+        
+        .history-item-type {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .history-item-date {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        
+        .history-item-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        
+        /* Financial Menu */
+        .financial-menu {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .menu-option {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .menu-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--menu-color);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+        
+        .menu-option:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .menu-option:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-card);
+        }
+        
+        .menu-option-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .menu-option-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .menu-option-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        /* Tabs */
+        .tabs-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .tab-btn {
+            padding: 1rem 2rem;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Exo 2', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .tab-btn.active,
+        .tab-btn:hover {
+            color: var(--primary-cyan);
+            border-bottom-color: var(--primary-cyan);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        /* Bills Grid */
+        .bills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        
+        .bill-card {
+            background: var(--bg-input);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .bill-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: var(--bill-color);
+            border-radius: 12px 0 0 12px;
+        }
+        
+        .bill-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-card);
+        }
+        
+        .bill-card.pending {
+            --bill-color: var(--primary-cyan);
+        }
+        
+        .bill-card.paid {
+            --bill-color: var(--primary-green);
+        }
+        
+        .bill-card.overdue {
+            --bill-color: var(--primary-red);
+        }
+        
+        .bill-card.due-soon {
+            --bill-color: var(--primary-orange);
+        }
+        
+        .bill-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+        
+        .bill-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .bill-category {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        
+        .bill-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .bill-status.pending {
+            background: rgba(0, 224, 255, 0.1);
+            color: var(--primary-cyan);
+        }
+        
+        .bill-status.paid {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--primary-green);
+        }
+        
+        .bill-status.overdue {
+            background: rgba(255, 0, 85, 0.1);
+            color: var(--primary-red);
+        }
+        
+        .bill-status.due-soon {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--primary-orange);
+        }
+        
+        .bill-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .bill-due-date {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .bill-notes {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+        
+        .bill-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .bill-btn {
+            flex: 1;
+            padding: 0.5rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+        }
+        
+        .bill-btn:hover {
+            background: var(--primary-cyan);
+            color: var(--bg-dark);
+            border-color: var(--primary-cyan);
+        }
+        
+        .bill-btn.success:hover {
+            background: var(--primary-green);
+        }
+        
+        .bill-btn.danger:hover {
+            background: var(--primary-red);
+        }
+        
+        /* Calendar */
+        .calendar-container {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .calendar-nav-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.2rem;
+        }
+        
+        .calendar-nav-btn:hover {
+            background: var(--primary-cyan);
+            color: var(--bg-dark);
+            border-color: var(--primary-cyan);
+        }
+        
+        .calendar-today-btn {
+            padding: 0.5rem 1rem;
+            background: var(--primary-cyan);
+            border: 1px solid var(--primary-cyan);
+            border-radius: 8px;
+            color: var(--bg-dark);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .calendar-today-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .calendar-month-year {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            min-width: 150px;
+            text-align: center;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            background: var(--bg-input);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 80px;
+        }
+        
+        .calendar-day:hover {
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        
+        .calendar-day.other-month {
+            opacity: 0.3;
+        }
+        
+        .calendar-day.today {
+            border-color: var(--primary-cyan);
+            background: rgba(0, 224, 255, 0.1);
+        }
+        
+        .calendar-day-number {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .calendar-day.today .calendar-day-number {
+            color: var(--primary-cyan);
+            font-weight: 700;
+        }
+        
+        .calendar-day-header {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        
+        .calendar-bills {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            flex: 1;
+        }
+        
+        .calendar-bill-bar {
+            height: 4px;
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+        
+        .calendar-bill-bar.paid {
+            background: var(--primary-green);
+        }
+        
+        .calendar-bill-bar.pending {
+            background: var(--primary-cyan);
+        }
+        
+        .calendar-bill-bar.due-soon {
+            background: var(--primary-orange);
+        }
+        
+        .calendar-bill-bar.overdue {
+            background: var(--primary-red);
+        }
+        
+        .calendar-bill-count {
+            background: var(--primary-cyan);
+            color: var(--bg-dark);
+            border-radius: 10px;
+            padding: 0.125rem 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-top: auto;
+            text-align: center;
+        }
+        
+        .calendar-legend {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .calendar-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .calendar-legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        /* Calendar Day Bills Popup */
+        .calendar-day-bills-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 0;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            z-index: 3000;
+            box-shadow: var(--shadow-card);
+        }
+        
+        .calendar-day-bills-popup.active {
+            display: block;
+            animation: modalSlideUp 0.3s;
+        }
+        
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: var(--bg-input);
+        }
+        
+        .popup-date {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+        }
+        
+        .popup-close {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .popup-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+        
+        .popup-bills-list {
+            padding: 1.5rem;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .popup-bill-item {
+            background: var(--bg-input);
+            border-left: 4px solid var(--bill-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .popup-bill-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Bottom Panel */
+        .bottom-panel-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1500;
+        }
+        
+        .bottom-panel-overlay.active {
+            display: block;
+        }
+        
+        .bottom-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--bg-card);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            transform: translateY(100%);
+            transition: transform 0.3s;
+            z-index: 1600;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .bottom-panel.active {
+            transform: translateY(0);
+        }
+        
+        .bottom-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .bottom-panel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+        }
+        
+        .bottom-panel-close {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .bottom-panel-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+        
+        .bottom-panel-content {
+            padding: 2rem;
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            min-width: 300px;
+            max-width: 400px;
+            transform: translateX(500px);
+            transition: transform 0.3s;
+            z-index: 3000;
+            box-shadow: var(--shadow-card);
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            border-left: 4px solid var(--primary-green);
+        }
+        
+        .notification.error {
+            border-left: 4px solid var(--primary-red);
+        }
+        
+        .notification.info {
+            border-left: 4px solid var(--primary-cyan);
+        }
+        
+        .notification-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .notification-message {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .menu-toggle {
+                display: block;
+            }
+            
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .day-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .day-toggle-icon {
+                position: absolute;
+                top: 1.5rem;
+                right: 1.5rem;
+            }
+            
+            .day-quick-stats {
+                width: 100%;
+            }
+            
+            .period-buttons,
+            .result-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .entries-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .bills-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .financial-menu {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-filters {
+                flex-wrap: wrap;
+            }
+
+            .calendar-grid {
+                gap: 0.25rem;
+            }
+
+            .calendar-day {
+                min-height: 60px;
+                padding: 0.25rem;
+            }
+
+            .calendar-day-number {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-particles" id="particles"></div>
+    
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">📊 TRADING PRO</div>
+                <div class="user-info">Sistema Simplificado</div>
+            </div>
+            
+            <nav class="nav-menu">
+                <div class="nav-item" onclick="navigateTo('setup')">
+                    <span class="nav-item-icon">⚙️</span>
+                    <span>Configuração</span>
+                </div>
+                <div class="nav-item active" onclick="navigateTo('dashboard')">
+                    <span class="nav-item-icon">📊</span>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" onclick="navigateTo('financeiro')">
+                    <span class="nav-item-icon">💰</span>
+                    <span>Financeiro</span>
+                </div>
+                <div class="nav-item" onclick="navigateTo('graficos')">
+                    <span class="nav-item-icon">📈</span>
+                    <span>Gráficos</span>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button class="btn btn-outline" style="width: 100%;" onclick="exportToExcel()">
+                    📥 Exportar Excel
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <div class="top-bar">
+                <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()">☰</button>
+                <div>
+                    <h1 class="page-title" id="pageTitle">📊 Dashboard</h1>
+                </div>
+                <div class="current-date" id="currentDate"></div>
+            </div>
+            
+            <div class="content-area">
+                <!-- Setup Screen -->
+                <div id="setup" class="screen">
+                    <div style="max-width: 600px; margin: 0 auto;">
+                        <div class="modal-header" style="text-align: center;">
+                            <h2>⚙️ Configuração Inicial</h2>
+                            <p>Configure sua banca e limites para começar</p>
+                        </div>
+                        
+                        <form onsubmit="saveSetup(event)">
+                            <div class="form-group">
+                                <label>💰 Banca Inicial (R$)</label>
+                                <input type="number" id="initialBank" step="0.01" min="0" placeholder="0.00" required>
+                                <small class="form-hint">Valor inicial da sua banca</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>🎯 Meta de Ganho (%)</label>
+                                <input type="number" id="metaPercent" step="0.01" min="0" placeholder="0.00" required>
+                                <div class="percent-buttons">
+                                    <button type="button" class="percent-btn" onclick="setPercentage('metaPercent', 10)">10%</button>
+                                    <button type="button" class="percent-btn" onclick="setPercentage('metaPercent', 20)">20%</button>
+                                    <button type="button" class="percent-btn" onclick="setPercentage('metaPercent', 30)">30%</button>
+                                    <button type="button" class="percent-btn" onclick="setPercentage('metaPercent', 50)">50%</button>
+                                </div>
+                                <small class="form-hint">Objetivo de lucro sobre a banca</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>⛔ Stop Loss (%)</label>
+                                <input type="number" id="stopPercent" step="0.01" min="0" placeholder="0.00" required>
+                                <div class="percent-buttons">
+                                    <button type="button" class="percent-btn" onclick="setPercentage('stopPercent', 10)">10%</button>
+                                    <button type="button" class="percent-btn" onclick="setPercentage('stopPercent', 20)">20%</button>
+                                    <button type="button" class="percent-btn" onclick="setPercentage('stopPercent', 30)">30%</button>
+                                    <button type="button" class="percent-btn" onclick="setPercentage('stopPercent', 50)">50%</button>
+                                </div>
+                                <small class="form-hint">Limite de perda sobre a banca</small>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success btn-large">Salvar Configuração</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Dashboard Screen -->
+                <div id="dashboard" class="screen active">
+                    <div class="summary-grid">
+                        <div class="summary-card current">
+                            <div class="card-icon">💰</div>
+                            <h3>Banca Atual</h3>
+                            <div class="stat-value" id="currentBank">R$ 0,00</div>
+                            <div class="stat-subtitle" id="bankVariation">—</div>
+                        </div>
+                        
+                        <div class="summary-card meta">
+                            <div class="card-icon">🎯</div>
+                            <h3>Meta</h3>
+                            <div class="stat-value" id="metaValue">R$ 0,00</div>
+                            <div class="stat-subtitle" id="metaPercent">—</div>
+                        </div>
+                        
+                        <div class="summary-card stop">
+                            <div class="card-icon">⛔</div>
+                            <h3>Stop Loss</h3>
+                            <div class="stat-value" id="stopValue">R$ 0,00</div>
+                            <div class="stat-subtitle" id="stopPercent">—</div>
+                        </div>
+                        
+                        <div class="summary-card profit">
+                            <div class="card-icon">📈</div>
+                            <h3>Rentabilidade</h3>
+                            <div class="stat-value" id="profitability">0%</div>
+                            <div class="stat-subtitle" id="profitValue">—</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">📅 DIAS DE TRADING</h3>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn-icon" onclick="openOperationsPanel()" title="Ver Operações">
+                                    📋
+                                </button>
+                                <button class="btn btn-primary" onclick="openNewDayModal()">+ Novo Dia</button>
+                            </div>
+                        </div>
+                        <div class="days-list" id="daysList"></div>
+                    </div>
+                </div>
+
+                <!-- Financeiro Screen -->
+                <div id="financeiro" class="screen">
+                    <div class="tabs-container">
+                        <button class="tab-btn active" onclick="switchFinancialTab('trading')">💹 Trading</button>
+                        <button class="tab-btn" onclick="switchFinancialTab('personal')">🏠 Pessoal</button>
+                    </div>
+
+                    <!-- Trading Tab -->
+                    <div id="tradingTab" class="tab-content active">
+                        <div class="summary-grid">
+                            <div class="summary-card current">
+                                <div class="card-icon">💰</div>
+                                <h3>Total Depositado</h3>
+                                <div class="stat-value" id="totalDeposits">R$ 0,00</div>
+                                <div class="stat-subtitle" id="depositsCount">0 depósitos</div>
+                            </div>
+                            
+                            <div class="summary-card meta">
+                                <div class="card-icon">💸</div>
+                                <h3>Total Sacado</h3>
+                                <div class="stat-value" id="totalWithdrawals">R$ 0,00</div>
+                                <div class="stat-subtitle" id="withdrawalsCount">0 saques</div>
+                            </div>
+                            
+                            <div class="summary-card current">
+                                <div class="card-icon">🏦</div>
+                                <h3>Saldo Disponível</h3>
+                                <div class="stat-value" id="availableBalance">R$ 0,00</div>
+                                <div class="stat-subtitle" id="balanceStatus">Calculando...</div>
+                            </div>
+                            
+                            <div class="summary-card profit">
+                                <div class="card-icon">🎯</div>
+                                <h3>Lucro com Trading</h3>
+                                <div class="stat-value" id="bettingProfit">R$ 0,00</div>
+                                <div class="stat-subtitle" id="bettingInfo">Calculando...</div>
+                            </div>
+                        </div>
+
+                        <div class="financial-menu">
+                            <div class="menu-option" style="--menu-color: #00E0FF;" onclick="openDepositPanel()">
+                                <div class="menu-option-icon">💰</div>
+                                <div class="menu-option-title">Registrar Depósito</div>
+                                <div class="menu-option-desc">Adicionar entrada de caixa</div>
+                            </div>
+                            <div class="menu-option" style="--menu-color: #D4AF37;" onclick="openWithdrawalPanel()">
+                                <div class="menu-option-icon">💸</div>
+                                <div class="menu-option-title">Registrar Saque</div>
+                                <div class="menu-option-desc">Registrar saída de caixa</div>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3 class="chart-title">💰 FLUXO DE CAIXA</h3>
+                                <div class="chart-filters">
+                                    <button class="filter-btn active" onclick="filterFinancialChart('7')">7 Dias</button>
+                                    <button class="filter-btn" onclick="filterFinancialChart('30')">30 Dias</button>
+                                    <button class="filter-btn" onclick="filterFinancialChart('90')">90 Dias</button>
+                                    <button class="filter-btn" onclick="filterFinancialChart('all')">Tudo</button>
+                                </div>
+                            </div>
+                            <div style="position: relative; height: 300px;">
+                                <canvas id="financialChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3 class="chart-title">📜 HISTÓRICO FINANCEIRO</h3>
+                                <div class="chart-filters">
+                                    <button class="filter-btn active" onclick="filterFinancialHistory('all')">Todos</button>
+                                    <button class="filter-btn" onclick="filterFinancialHistory('deposits')">Depósitos</button>
+                                    <button class="filter-btn" onclick="filterFinancialHistory('withdrawals')">Saques</button>
+                                </div>
+                            </div>
+                            <div class="history-list" id="financialHistory"></div>
+                        </div>
+                    </div>
+
+                    <!-- Personal Tab -->
+                    <div id="personalTab" class="tab-content">
+                        <div class="summary-grid">
+                            <div class="summary-card current">
+                                <div class="card-icon">📋</div>
+                                <h3>Total de Contas</h3>
+                                <div class="stat-value" id="totalBills">0</div>
+                                <div class="stat-subtitle" id="billsStatus">Nenhuma conta cadastrada</div>
+                            </div>
+                            
+                            <div class="summary-card meta">
+                                <div class="card-icon">⚠️</div>
+                                <h3>Vencidas</h3>
+                                <div class="stat-value" id="overdueBills">0</div>
+                                <div class="stat-subtitle">Contas em atraso</div>
+                            </div>
+                            
+                            <div class="summary-card stop">
+                                <div class="card-icon">🔔</div>
+                                <h3>Próximas</h3>
+                                <div class="stat-value" id="upcomingBills">0</div>
+                                <div class="stat-subtitle">Vencem em 3 dias</div>
+                            </div>
+                            
+                            <div class="summary-card profit">
+                                <div class="card-icon">✅</div>
+                                <h3>Pagas</h3>
+                                <div class="stat-value" id="paidBills">0</div>
+                                <div class="stat-subtitle">Este mês</div>
+                            </div>
+                        </div>
+
+                        <div class="financial-menu">
+                            <div class="menu-option" style="--menu-color: #00E0FF;" onclick="openAddBillPanel()">
+                                <div class="menu-option-icon">➕</div>
+                                <div class="menu-option-title">Adicionar Conta</div>
+                                <div class="menu-option-desc">Cadastrar nova conta pessoal</div>
+                            </div>
+                        </div>
+
+                        <!-- Calendar -->
+                        <div class="calendar-container">
+                            <div class="calendar-header">
+                                <h3 class="chart-title">📅 CALENDÁRIO DE CONTAS</h3>
+                                <div class="calendar-nav">
+                                    <button class="calendar-nav-btn" onclick="previousMonth()">‹</button>
+                                    <div class="calendar-month-year" id="calendarMonthYear"></div>
+                                    <button class="calendar-nav-btn" onclick="nextMonth()">›</button>
+                                    <button class="calendar-today-btn" onclick="goToToday()">Hoje</button>
+                                </div>
+                            </div>
+                            
+                            <div class="calendar-grid" id="calendarGrid"></div>
+                            
+                            <div class="calendar-legend">
+                                <div class="calendar-legend-item">
+                                    <div class="calendar-legend-dot" style="background: var(--primary-green);"></div>
+                                    <span>Paga</span>
+                                </div>
+                                <div class="calendar-legend-item">
+                                    <div class="calendar-legend-dot" style="background: var(--primary-cyan);"></div>
+                                    <span>Pendente</span>
+                                </div>
+                                <div class="calendar-legend-item">
+                                    <div class="calendar-legend-dot" style="background: var(--primary-orange);"></div>
+                                    <span>Vence em breve</span>
+                                </div>
+                                <div class="calendar-legend-item">
+                                    <div class="calendar-legend-dot" style="background: var(--primary-red);"></div>
+                                    <span>Vencida</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3 class="chart-title">🏠 CONTAS PESSOAIS</h3>
+                                <div class="chart-filters">
+                                    <button class="filter-btn active" onclick="filterBills('all')">Todas</button>
+                                    <button class="filter-btn" onclick="filterBills('pending')">Pendentes</button>
+                                    <button class="filter-btn" onclick="filterBills('overdue')">Vencidas</button>
+                                    <button class="filter-btn" onclick="filterBills('paid')">Pagas</button>
+                                </div>
+                            </div>
+                            <div class="bills-grid" id="billsList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos Screen -->
+                <div id="graficos" class="screen">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">📊 EVOLUÇÃO DA BANCA</h3>
+                        </div>
+                        <div style="position: relative; height: 300px;">
+                            <canvas id="bankEvolutionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">🎯 WIN RATE</h3>
+                        </div>
+                        <div style="position: relative; height: 300px;">
+                            <canvas id="winRateChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">⏰ PERFORMANCE POR PERÍODO</h3>
+                        </div>
+                        <div style="position: relative; height: 300px;">
+                            <canvas id="periodChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Nova Entrada -->
+    <div id="entryModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeEntryModal()">&times;</span>
+            <div class="modal-header">
+                <h2>➕ Nova Entrada</h2>
+                <p>Registre o resultado da sua operação</p>
+            </div>
+            <form onsubmit="addEntry(event)">
+                <div class="form-group">
+                    <label>⏰ Período</label>
+                    <div class="period-buttons">
+                        <button type="button" class="period-btn" onclick="selectPeriod('morning')">
+                            <span class="btn-emoji">🌅</span>
+                            <span class="btn-label">Manhã</span>
+                        </button>
+                        <button type="button" class="period-btn" onclick="selectPeriod('afternoon')">
+                            <span class="btn-emoji">☀️</span>
+                            <span class="btn-label">Tarde</span>
+                        </button>
+                        <button type="button" class="period-btn" onclick="selectPeriod('night')">
+                            <span class="btn-emoji">🌙</span>
+                            <span class="btn-label">Noite</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>📊 Resultado</label>
+                    <div class="result-buttons">
+                        <button type="button" class="result-btn result-win" onclick="selectResult('win')">
+                            <span class="btn-emoji">✅</span>
+                            <span class="btn-label">WIN</span>
+                        </button>
+                        <button type="button" class="result-btn result-loss" onclick="selectResult('loss')">
+                            <span class="btn-emoji">❌</span>
+                            <span class="btn-label">LOSS</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>💵 Valor (R$)</label>
+                    <input type="number" id="entryValue" step="0.01" min="0" placeholder="0.00" required>
+                    <small class="form-hint">Valor da operação</small>
+                </div>
+                
+                <button type="submit" class="btn btn-success btn-large">Adicionar Entrada</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Novo Dia -->
+    <div id="newDayModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeNewDayModal()">&times;</span>
+            <div class="modal-header">
+                <h2>📅 Novo Dia</h2>
+                <p>Crie um novo dia de trading</p>
+            </div>
+            <form onsubmit="createDay(event)">
+                <div class="form-group">
+                    <label>📅 Data</label>
+                    <input type="date" id="newDayDate" required>
+                    <small class="form-hint">Selecione a data do dia de trading</small>
+                </div>
+                <button type="submit" class="btn btn-success btn-large">Criar Dia</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Alterar Data -->
+    <div id="changeDateModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeChangeDateModal()">&times;</span>
+            <div class="modal-header">
+                <h2>📅 Alterar Data</h2>
+                <p>Modifique a data deste dia</p>
+            </div>
+            <form onsubmit="changeDate(event)">
+                <div class="form-group">
+                    <label>📅 Nova Data</label>
+                    <input type="date" id="changeDate" required>
+                    <small class="form-hint">Escolha uma nova data</small>
+                </div>
+                <button type="submit" class="btn btn-success btn-large">Salvar Alteração</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bottom Panel -->
+    <div class="bottom-panel-overlay" id="bottomPanelOverlay" onclick="closeBottomPanel()"></div>
+    <div class="bottom-panel" id="bottomPanel">
+        <div class="bottom-panel-header">
+            <h3 class="bottom-panel-title" id="bottomPanelTitle">Painel</h3>
+            <button class="bottom-panel-close" onclick="closeBottomPanel()">✕</button>
+        </div>
+        <div class="bottom-panel-content" id="bottomPanelContent"></div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <div class="notification-title" id="notificationTitle"></div>
+        <div class="notification-message" id="notificationMessage"></div>
+    </div>
+
+    <!-- Calendar Day Bills Popup -->
+    <div class="calendar-day-bills-popup" id="calendarPopup">
+        <div class="popup-header">
+            <div class="popup-date" id="popupDate"></div>
+            <button class="popup-close" onclick="closeCalendarPopup()">×</button>
+        </div>
+        <div class="popup-bills-list" id="popupBillsList"></div>
+    </div>
+
+    <!-- Firebase Integration -->
+    <script type="module" src="firebase-config.js"></script>
+    <script src="app.js" type="module"></script>
+</body>
+</html>
